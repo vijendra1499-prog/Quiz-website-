@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Test Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .question-card {
+            transition: all 0.3s ease;
+            min-height: 300px;
+        }
+        .option:hover {
+            transform: translateY(-2px);
+        }
+        .timer {
+            font-family: monospace;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-700">Mock Test Platform</h1>
+            <div id="admin-login-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded cursor-pointer">
+                Admin Login
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- Quiz Selection View -->
+            <div id="quiz-selection-view">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                    <h2 class="text-2xl font-semibold mb-4">Available Quizzes</h2>
+                    <div id="quiz-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Quizzes will be populated here -->
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-semibold mb-4">Your Progress</h2>
+                    <div id="user-progress">
+                        <div class="flex items-center mb-4">
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div class="bg-indigo-600 h-4 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span class="ml-4 text-sm font-medium">0% complete</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Progress stats will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Attempt View -->
+            <div id="quiz-view" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-to-quizzes" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+                        ← Back to Quizzes
+                    </button>
+                    <div class="flex items-center">
+                        <span id="timer-display" class="timer text-xl font-bold text-indigo-600 mr-2">00:00</span>
+                        <svg width="40" height="40" id="timer-ring">
+                            <circle class="progress-ring__circle" stroke="#4f46e5" stroke-width="4" fill="transparent" r="16" cx="20" cy="20" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 question-card">
+                    <h3 id="question-text" class="text-xl font-medium mb-4">Question will appear here</h3>
+                    <div id="options-container" class="grid grid-cols-1 gap-3">
+                        <!-- Options will be added here -->
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button id="prev-question" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded hidden">
+                            Previous
+                        </button>
+                        <button id="next-question" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded ml-auto">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results View -->
+            <div id="results-view" class="hidden">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">Quiz Results</h2>
+                    <div class="text-center mb-6">
+                        <div class="text-5xl font-bold text-indigo-600 mb-2" id="score-display">0%</div>
+                        <div class="text-lg">Your Score</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-8">
+                        <div class="bg-gray-100 p-4 rounded text-center">
+                            <div class="text-2xl font-bold" id="correct-answers">0</div>
+                            <div>Correct</div>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded text-center">
+                            <div class="text-2xl font-bold" id="incorrect-answers">0</div>
+                            <div>Incorrect</div>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded text-center">
+                            <div class="text-2xl font-bold" id="time-taken">0:00</div>
+                            <div>Time</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-center">
+                        <button id="view-explanations" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded">
+                            View Explanations
+                        </button>
+                    </div>
+                </div>
+
+                <div id="leaderboard" class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-semibold mb-4">Leaderboard</h2>
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b-2 border-gray-200">
+                                <th class="text-left pb-2">Rank</th>
+                                <th class="text-left pb-2">User</th>
+                                <th class="text-left pb-2">Score</th>
+                                <th class="text-left pb-2">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-rows">
+                            <!-- Leaderboard entries will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Explanations View -->
+            <div id="explanations-view" class="hidden">
+                <button id="back-to-results" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded mb-4">
+                    ← Back to Results
+                </button>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-semibold mb-4">Question Explanations</h2>
+                    <div id="explanation-container">
+                        <!-- Explanations will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Panel View -->
+            <div id="admin-view" class="hidden">
+                <button id="back-to-main" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded mb-6">
+                    ← Back to Main
+                </button>
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">Manage Quizzes</h2>
+                    <div class="flex justify-between mb-4">
+                        <button id="create-quiz" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                            Create New Quiz
+                        </button>
+                    </div>
+                    <div id="quiz-management-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Admin quiz list will be populated here -->
+                    </div>
+                </div>
+                
+                <div id="quiz-editor" class="bg-white rounded-lg shadow-md p-6 hidden">
+                    <h2 id="quiz-editor-title" class="text-2xl font-semibold mb-4">New Quiz</h2>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Quiz Title</label>
+                        <input type="text" id="quiz-title" class="w-full px-3 py-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Time Limit (minutes)</label>
+                        <input type="number" id="quiz-time" class="w-full px-3 py-2 border rounded" value="10">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Description</label>
+                        <textarea id="quiz-description" class="w-full px-3 py-2 border rounded" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="border-t pt-4 mt-4">
+                        <h3 class="text-lg font-medium mb-4">Questions</h3>
+                        <div id="question-editor-container">
+                            <!-- Questions will be added here -->
+                        </div>
+                        <button id="add-question" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded mt-4">
+                            Add Question
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6">
+                        <button id="cancel-quiz-edit" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded mr-2">
+                            Cancel
+                        </button>
+                        <button id="save-quiz" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                            Save Quiz
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // App state
+        const state = {
+            currentView: 'quiz-selection', // quiz-selection, quiz, results, explanations, admin
+            quizzes: [
+                {
+                    id: 'math-basics',
+                    title: 'Mathematics Basics',
+                    description: 'Test your fundamental math skills',
+                    timeLimit: 10, // in minutes
+                    questions: [
+                        {
+                            question: "What is the value of π (pi) rounded to two decimal places?",
+                            options: ["3.14", "3.16", "3.18", "3.20"],
+                            correctAnswer: 0,
+                            explanation: "The value of π (pi) is approximately 3.14159, which rounds to 3.14 to two decimal places."
+                        },
+                        {
+                            question: "What is the sum of the angles in a triangle?",
+                            options: ["90°", "180°", "270°", "360°"],
+                            correctAnswer: 1,
+                            explanation: "The sum of the three interior angles of any triangle will always equal 180 degrees."
+                        },
+                        {
+                            question: "What is the square root of 64?",
+                            options: ["4", "6", "8", "10"],
+                            correctAnswer: 2,
+                            explanation: "8 multiplied by itself (8 × 8) equals 64, so the square root of 64 is 8."
+                        }
+                    ]
+                },
+                {
+                    id: 'science-trivia',
+                    title: 'Science Trivia',
+                    description: 'Test your knowledge of basic science',
+                    timeLimit: 15,
+                    questions: [
+                        {
+                            question: "Which planet is known as the Red Planet?",
+                            options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                            correctAnswer: 1,
+                            explanation: "Mars is often called the 'Red Planet' because iron minerals in the Martian soil oxidize, or rust, causing the soil and atmosphere to look red."
+                        },
+                        {
+                            question: "What is the chemical symbol for gold?",
+                            options: ["Go", "Au", "Ag", "Gd"],
+                            correctAnswer: 1,
+                            explanation: "The chemical symbol for gold is Au, which comes from the Latin word 'aurum' meaning 'shining dawn'."
+                        }
+                    ]
+                }
+            ],
+            userProgress: {},
+            currentQuiz: null,
+            currentQuestionIndex: 0,
+            userAnswers: [],
+            quizStartTime: null,
+            quizEndTime: null,
+            isAdmin: false,
+            isEditingQuiz: false,
+            editingQuizId: null,
+            editingQuestions: []
+        };
+
+        // DOM Elements
+        const elements = {
+            views: {
+                quizSelection: document.getElementById('quiz-selection-view'),
+                quiz: document.getElementById('quiz-view'),
+                results: document.getElementById('results-view'),
+                explanations: document.getElementById('explanations-view'),
+                admin: document.getElementById('admin-view')
+            },
+            quizList: document.getElementById('quiz-list'),
+            userProgress: document.getElementById('user-progress'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerRing: document.getElementById('timer-ring'),
+            questionText: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            prevQuestionBtn: document.getElementById('prev-question'),
+            nextQuestionBtn: document.getElementById('next-question'),
+            scoreDisplay: document.getElementById('score-display'),
+            correctAnswers: document.getElementById('correct-answers'),
+            incorrectAnswers: document.getElementById('incorrect-answers'),
+            timeTaken: document.getElementById('time-taken'),
+            leaderboardRows: document.getElementById('leaderboard-rows'),
+            explanationContainer: document.getElementById('explanation-container'),
+            adminLoginBtn: document.getElementById('admin-login-btn'),
+            quizManagementList: document.getElementById('quiz-management-list'),
+            quizEditor: document.getElementById('quiz-editor'),
+            quizEditorTitle: document.getElementById('quiz-editor-title'),
+            quizTitle: document.getElementById('quiz-title'),
+            quizTime: document.getElementById('quiz-time'),
+            quizDescription: document.getElementById('quiz-description'),
+            questionEditorContainer: document.getElementById('question-editor-container'),
+            backToResults: document.getElementById('back-to-results'),
+            viewExplanations: document.getElementById('view-explanations'),
+            backToQuizzes: document.getElementById('back-to-quizzes'),
+            backToMain: document.getElementById('back-to-main'),
+            createQuiz: document.getElementById('create-quiz'),
+            addQuestion: document.getElementById('add-question'),
+            cancelQuizEdit: document.getElementById('cancel-quiz-edit'),
+            saveQuiz: document.getElementById('save-quiz')
+        };
+
+        // Timer variables
+        let timerInterval;
+        let timeRemaining = 0;
+        let totalQuizTime = 0;
+
+        // Initialize the app
+        function init() {
+            loadUserProgress();
+            renderQuizList();
+            setupEventListeners();
+            showView('quiz-selection');
+            
+            // Initialize timer ring
+            const circle = elements.timerRing.querySelector('circle');
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = circumference;
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Navigation
+            elements.backToQuizzes.addEventListener('click', () => {
+                showView('quiz-selection');
+                clearInterval(timerInterval);
+            });
+            
+            elements.backToResults.addEventListener('click', () => {
+                showView('results');
+            });
+            
+            elements.backToMain.addEventListener('click', () => {
+                showView('quiz-selection');
+            });
+            
+            elements.viewExplanations.addEventListener('click', () => {
+                showView('explanations');
+                renderExplanations();
+            });
+            
+            elements.adminLoginBtn.addEventListener('click', toggleAdminMode);
+            
+            // Quiz navigation
+            elements.prevQuestionBtn.addEventListener('click', goToPreviousQuestion);
+            elements.nextQuestionBtn.addEventListener('click', goToNextQuestion);
+            
+            // Admin functionality
+            elements.createQuiz.addEventListener('click', () => startEditingQuiz());
+            elements.addQuestion.addEventListener('click', addQuestionToEditor);
+            elements.cancelQuizEdit.addEventListener('click', () => cancelQuizEdit());
+            elements.saveQuiz.addEventListener('click', saveQuiz);
+        }
+
+        // Show a specific view
+        function showView(viewName) {
+            // Hide all views
+            Object.values(elements.views).forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            // Show the requested view
+            elements.views[viewName.replace('-', '')].classList.remove('hidden');
+            state.currentView = viewName;
+            
+            // Special handling for specific views
+            if (viewName === 'quiz-selection') {
+                renderQuizList();
+                renderUserProgress();
+                
+                if (state.isAdmin) {
+                    renderAdminQuizList();
+                    elements.views.admin.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Load user progress from localStorage
+        function loadUserProgress() {
+            const progress = localStorage.getItem('quizProgress');
+            if (progress) {
+                state.userProgress = JSON.parse(progress);
+            }
+        }
+
+        // Save user progress to localStorage
+        function saveUserProgress() {
+            localStorage.setItem('quizProgress', JSON.stringify(state.userProgress));
+        }
+
+        // Render the list of available quizzes
+        function renderQuizList() {
+            elements.quizList.innerHTML = '';
+            
+            state.quizzes.forEach(quiz => {
+                const quizCard = document.createElement('div');
+                quizCard.className = 'bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer';
+                quizCard.addEventListener('click', () => startQuiz(quiz.id));
+                
+                const completion = state.userProgress[quiz.id]?.completion || 0;
+                const bestScore = state.userProgress[quiz.id]?.bestScore || 0;
+                
+                quizCard.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-2">${quiz.title}</h3>
+                    <p class="text-gray-600 text-sm mb-3">${quiz.description}</p>
+                    <div class="flex justify-between text-sm">
+                        <span><span class="font-medium">${quiz.questions.length}</span> questions</span>
+                        <span><span class="font-medium">${quiz.timeLimit}</span> min</span>
+                    </div>
+                    <div class="mt-3">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-500 h-2 rounded-full" style="width: ${completion}%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs mt-1">
+                            <span>${Math.floor(completion)}% complete</span>
+                            ${bestScore > 0 ? `<span>Best: ${bestScore}%</span>` : '<span>Not attempted</span>'}
+                        </div>
+                    </div>
+                `;
+                
+                elements.quizList.appendChild(quizCard);
+            });
+        }
+
+        // Render admin quiz list
+        function renderAdminQuizList() {
+            elements.quizManagementList.innerHTML = '';
+            
+            state.quizzes.forEach((quiz, index) => {
+                const quizCard = document.createElement('div');
+                quizCard.className = 'bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow border border-gray-200';
+                
+                quizCard.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-2">${quiz.title}</h3>
+                    <p class="text-gray-600 text-sm mb-3">${quiz.description}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm"><span class="font-medium">${quiz.questions.length}</span> questions • ${quiz.timeLimit} min</span>
+                        <div class="flex">
+                            <button class="edit-quiz-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2" data-id="${index}">
+                                Edit
+                            </button>
+                            <button class="delete-quiz-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" data-id="${index}">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                elements.quizManagementList.appendChild(quizCard);
+            });
+            
+            // Add event listeners for edit and delete buttons
+            document.querySelectorAll('.edit-quiz-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const quizIndex = parseInt(e.target.dataset.id);
+                    startEditingQuiz(quizIndex);
+                });
+            });
+            
+            document.querySelectorAll('.delete-quiz-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const quizIndex = parseInt(e.target.dataset.id);
+                    deleteQuiz(quizIndex);
+                });
+            });
+        }
+
+        // Start a quiz
+        function startQuiz(quizId) {
+            const quiz = state.quizzes.find(q => q.id === quizId);
+            if (!quiz) return;
+            
+            state.currentQuiz = quiz;
+            state.currentQuestionIndex = 0;
+            state.userAnswers = Array(quiz.questions.length).fill(null);
+            state.quizStartTime = new Date();
+            
+            // Set up timer
+            totalQuizTime = quiz.timeLimit * 60 * 1000; // Convert to milliseconds
+            timeRemaining = totalQuizTime;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeRemaining -= 1000;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    finishQuiz();
+                }
+            }, 1000);
+            
+            showView('quiz');
+            renderQuestion();
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60000);
+            const seconds = Math.floor((timeRemaining % 60000) / 1000);
+            
+            elements.timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update progress ring
+            const progress = timeRemaining / totalQuizTime;
+            const circle = elements.timerRing.querySelector('circle');
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            const offset = circumference * progress;
+            circle.style.strokeDashoffset = offset;
+            
+            // Change color when time is running low
+            if (timeRemaining < 60000) { // Less than 1 minute
+                circle.setAttribute('stroke', '#ef4444');
+                elements.timerDisplay.classList.add('text-red-600');
+            } else {
+                circle.setAttribute('stroke', '#4f46e5');
+                elements.timerDisplay.classList.remove('text-red-600');
+            }
+        }
+
+        // Render the current question
+        function renderQuestion() {
+            if (!state.currentQuiz || state.currentQuestionIndex >= state.currentQuiz.questions.length) return;
+            
+            const question = state.currentQuiz.questions[state.currentQuestionIndex];
+            elements.questionText.textContent = `${state.currentQuestionIndex + 1}. ${question.question}`;
+            
+            // Render options
+            elements.optionsContainer.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = `option bg-gray-100 hover:bg-gray-200 p-3 rounded cursor-pointer transition-transform ${state.userAnswers[state.currentQuestionIndex] === index ? 'bg-indigo-100 border-indigo-300 border-2' : ''}`;
+                optionElement.textContent = option;
+                optionElement.addEventListener('click', () => selectAnswer(index));
+                elements.optionsContainer.appendChild(optionElement);
+            });
+            
+            // Update navigation buttons
+            elements.prevQuestionBtn.classList.toggle('hidden', state.currentQuestionIndex === 0);
+            
+            if (state.currentQuestionIndex === state.currentQuiz.questions.length - 1) {
+                elements.nextQuestionBtn.textContent = 'Finish';
+            } else {
+                elements.nextQuestionBtn.textContent = 'Next';
+            }
+        }
+
+        // Select an answer
+        function selectAnswer(answerIndex) {
+            state.userAnswers[state.currentQuestionIndex] = answerIndex;
+            renderQuestion(); // Re-render to show selected answer
+        }
+
+        // Go to previous question
+        function goToPreviousQuestion() {
+            if (state.currentQuestionIndex > 0) {
+                state.currentQuestionIndex--;
+                renderQuestion();
+            }
+        }
+
+        // Go to next question
+        function goToNextQuestion() {
+            if (state.currentQuestionIndex < state.currentQuiz.questions.length - 1) {
+                state.currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        // Finish the quiz
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            state.quizEndTime = new Date();
+            
+            // Calculate results
+            const correctCount = state.userAnswers.reduce((count, answer, index) => {
+                return count + (answer === state.currentQuiz.questions[index].correctAnswer ? 1 : 0);
+            }, 0);
+            
+            const score = Math.round((correctCount / state.currentQuiz.questions.length) * 100);
+            const timeSpent = (state.quizEndTime - state.quizStartTime) / 1000; // in seconds
+            
+            // Update user progress
+            if (!state.userProgress[state.currentQuiz.id]) {
+                state.userProgress[state.currentQuiz.id] = {
+                    completion: 0,
+                    bestScore: 0,
+                    attempts: 0
+                };
+            }
+            
+            const progress = state.userProgress[state.currentQuiz.id];
+            progress.completion = 100; // Quiz completed
+            progress.attempts++;
+            
+            if (score > progress.bestScore) {
+                progress.bestScore = score;
+            }
+            
+            saveUserProgress();
+            
+            // Display results
+            elements.scoreDisplay.textContent = `${score}%`;
+            elements.correctAnswers.textContent = correctCount;
+            elements.incorrectAnswers.textContent = state.currentQuiz.questions.length - correctCount;
+            
+            const minutes = Math.floor(timeSpent / 60);
+            const seconds = Math.floor(timeSpent % 60);
+            elements.timeTaken.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Render leaderboard (using localStorage as a simple data store)
+            renderLeaderboard(score, state.currentQuiz.id, timeSpent);
+            
+            showView('results');
+        }
+
+        // Render leaderboard
+        function renderLeaderboard(score, quizId, timeSpent) {
+            // Get or create leaderboard data
+            let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || {};
+            if (!leaderboard[quizId]) {
+                leaderboard[quizId] = [];
+            }
+            
+            // Add current attempt (using a simple identifier)
+            const attemptId = `${Date.now()}`;
+            leaderboard[quizId].push({
+                id: attemptId,
+                score: score,
+                time: timeSpent,
+                timestamp: new Date().toISOString(),
+                name: 'You' // In a real app, this would capture user info
+            });
+            
+            // Sort by score descending, then by time ascending
+            leaderboard[quizId].sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                return a.time - b.time;
+            });
+            
+            // Limit to top 10
+            leaderboard[quizId] = leaderboard[quizId].slice(0, 10);
+            
+            // Save back to storage
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+            
+            // Render the leaderboard
+            elements.leaderboardRows.innerHTML = '';
+            leaderboard[quizId].forEach((entry, index) => {
+                const row = document.createElement('tr');
+                const minutes = Math.floor(entry.time / 60);
+                const seconds = Math.floor(entry.time % 60);
+                
+                row.className = index === 0 ? 'font-bold' : '';
+                row.innerHTML = `
+                    <td class="py-2">${index + 1}</td>
+                    <td class="py-2">${entry.name}</td>
+                    <td class="py-2">${entry.score}%</td>
+                    <td class="py-2">${minutes}:${seconds.toString().padStart(2, '0')}</td>
+                `;
+                
+                if (entry.id === attemptId) {
+                    row.classList.add('bg-indigo-50');
+                }
+                
+                elements.leaderboardRows.appendChild(row);
+            });
+        }
+
+        // Render explanations for all questions
+        function renderExplanations() {
+            elements.explanationContainer.innerHTML = '';
+            
+            state.currentQuiz.questions.forEach((question, index) => {
+                const explanationCard = document.createElement('div');
+                explanationCard.className = 'mb-6 pb-6 border-b border-gray-200 last:border-0';
+                
+                const userAnswer = state.userAnswers[index];
+                const isCorrect = userAnswer === question.correctAnswer;
+                
+                explanationCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-lg font-medium">Question ${index + 1}: ${question.question}</h4>
+                        <span class="text-sm px-2 py-1 rounded ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${isCorrect ? 'Correct' : 'Incorrect'}
+                        </span>
+                    </div>
+                    <div class="mb-4">
+                        <h5 class="font-medium text-gray-700 mb-1">Your answer:</h5>
+                        <p>${userAnswer !== null ? question.options[userAnswer] : 'Not answered'}</p>
+                    </div>
+                    ${!isCorrect ? `
+                        <div class="mb-4">
+                            <h5 class="font-medium text-gray-700 mb-1">Correct answer:</h5>
+                            <p>${question.options[question.correctAnswer]}</p>
+                        </div>
+                    ` : ''}
+                    <div>
+                        <h5 class="font-medium text-gray-700 mb-1">Explanation:</h5>
+                        <p>${question.explanation}</p>
+                    </div>
+                `;
+                
+                elements.explanationContainer.appendChild(explanationCard);
+            });
+        }
+
+        // Render user progress overview
+        function renderUserProgress() {
+            const totalQuizzes = state.quizzes.length;
+            const completedQuizzes = Object.values(state.userProgress).filter(p => p.completion === 100).length;
+            const completionPercentage = Math.round((completedQuizzes / totalQuizzes) * 100);
+            
+            // Update progress bar
+            const progressBar = elements.userProgress.querySelector('.bg-indigo-600');
+            progressBar.style.width = `${completionPercentage}%`;
+            elements.userProgress.querySelector('span').textContent = `${completionPercentage}% complete`;
+            
+            // Update stats
+            const statsContainer = elements.userProgress.querySelector('.grid');
+            statsContainer.innerHTML = '';
+            
+            statsContainer.innerHTML = `
+                <div class="bg-gray-100 p-4 rounded text-center">
+                    <div class="text-2xl font-bold">${totalQuizzes}</div>
+                    <div>Total Quizzes</div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded text-center">
+                    <div class="text-2xl font-bold">${completedQuizzes}</div>
+                    <div>Completed</div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded text-center">
+                    <div class="text-2xl font-bold">${completionPercentage}%</div>
+                    <div>Overall</div>
+                </div>
+            `;
+        }
+
+        // Toggle admin mode
+        function toggleAdminMode() {
+            state.isAdmin = !state.isAdmin;
+            
+            if (state.isAdmin) {
+                elements.adminLoginBtn.textContent = 'Exit Admin';
+                elements.adminLoginBtn.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                elements.adminLoginBtn.classList.add('bg-red-200', 'hover:bg-red-300');
+                showView('admin');
+                renderAdminQuizList();
+            } else {
+                elements.adminLoginBtn.textContent = 'Admin Login';
+                elements.adminLoginBtn.classList.remove('bg-red-200', 'hover:bg-red-300');
+                elements.adminLoginBtn.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                showView('quiz-selection');
+            }
+        }
+
+        // Start editing a quiz (or create a new one)
+        function startEditingQuiz(quizIndex = null) {
+            if (quizIndex !== null && quizIndex >= 0 && quizIndex < state.quizzes.length) {
+                // Edit existing quiz
+                const quiz = state.quizzes[quizIndex];
+                state.editingQuizId = quizIndex;
+                elements.quizEditorTitle.textContent = `Edit Quiz: ${quiz.title}`;
+                elements.quizTitle.value = quiz.title;
+                elements.quizTime.value = quiz.timeLimit;
+                elements.quizDescription.value = quiz.description || '';
+                
+                // Set up questions for editing
+                state.editingQuestions = JSON.parse(JSON.stringify(quiz.questions));
+                
+                // If there are no questions, add one by default
+                if (state.editingQuestions.length === 0) {
+                    addQuestionToEditor();
+                }
+            } else {
+                // Create new quiz
+                state.editingQuizId = null;
+                elements.quizEditorTitle.textContent = 'Create New Quiz';
+                elements.quizTitle.value = '';
+                elements.quizTime.value = 10;
+                elements.quizDescription.value = '';
+                
+                // Start with one empty question
+                state.editingQuestions = [];
+                addQuestionToEditor();
+            }
+            
+            // Render questions
+            renderQuestionEditor();
+            
+            // Show editor
+            elements.quizEditor.classList.remove('hidden');
+        }
+
+        // Render the question editor
+        function renderQuestionEditor() {
+            elements.questionEditorContainer.innerHTML = '';
+            
+            state.editingQuestions.forEach((question, questionIndex) => {
+                const questionCard = document.createElement('div');
+                questionCard.className = 'border border-gray-200 rounded p-4 mb-4';
+                questionCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-medium">Question ${questionIndex + 1}</h4>
+                        <button class="delete-question-btn text-red-500 hover:text-red-700" data-index="${questionIndex}">Delete</button>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium mb-1">Question Text</label>
+                        <input type="text" class="question-text w-full px-3 py-2 border rounded" value="${question.question || ''}" data-index="${questionIndex}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Options (mark correct answer with radio button)</label>
+                        ${[0, 1, 2, 3].map(optIndex => `
+                            <div class="flex items-center mb-2">
+                                <input type="radio" name="correct-${questionIndex}" value="${optIndex}" class="mr-2" ${question.correctAnswer === optIndex ? 'checked' : ''}>
+                                <input type="text" class="option-text w-full px-3 py-1 border rounded" value="${question.options ? (question.options[optIndex] || '') : ''}" data-question="${questionIndex}" data-option="${optIndex}">
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium mb-1">Explanation</label>
+                        <textarea class="explanation-text w-full px-3 py-2 border rounded" data-index="${questionIndex}">${question.explanation || ''}</textarea>
+                    </div>
+                `;
+                
+                elements.questionEditorContainer.appendChild(questionCard);
+            });
+            
+            // Add event listeners for question deletion
+            document.querySelectorAll('.delete-question-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const questionIndex = parseInt(e.target.dataset.index);
+                    deleteQuestion(questionIndex);
+                    renderQuestionEditor();
+                });
+            });
+            
+            // Add event listeners for input changes
+            document.querySelectorAll('.question-text').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const questionIndex = parseInt(e.target.dataset.index);
+                    state.editingQuestions[questionIndex].question = e.target.value;
+                });
+            });
+            
+            document.querySelectorAll('.option-text').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const questionIndex = parseInt(e.target.dataset.question);
+                    const optionIndex = parseInt(e.target.dataset.option);
+                    
+                    if (!state.editingQuestions[questionIndex].options) {
+                        state.editingQuestions[questionIndex].options = ['', '', '', ''];
+                    }
+                    
+                    state.editingQuestions[questionIndex].options[optionIndex] = e.target.value;
+                });
+            });
+            
+            document.querySelectorAll('.explanation-text').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const questionIndex = parseInt(e.target.dataset.index);
+                    state.editingQuestions[questionIndex].explanation = e.target.value;
+                });
+            });
+            
+            // Add event listeners for correct answer radio buttons
+            document.querySelectorAll('[name^="correct-"]').forEach(radio => {
+                const questionIndex = parseInt(radio.name.replace('correct-', ''));
+                radio.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        state.editingQuestions[questionIndex].correctAnswer = parseInt(e.target.value);
+                    }
+                });
+            });
+        }
+
+        // Add a new question to the editor
+        function addQuestionToEditor() {
+            state.editingQuestions.push({
+                question: '',
+                options: ['', '', '', ''],
+                correctAnswer: 0,
+                explanation: ''
+            });
+            
+            renderQuestionEditor();
+        }
+
+        // Delete a question
+        function deleteQuestion(questionIndex) {
+            state.editingQuestions.splice(questionIndex, 1);
+        }
+
+        // Save the edited quiz
+        function saveQuiz() {
+            // Validate inputs
+            if (!elements.quizTitle.value.trim()) {
+                alert('Please enter a quiz title');
+                return;
+            }
+            
+            if (!elements.quizTime.value || elements.quizTime.value < 1) {
+                alert('Please enter a valid time limit (minimum 1 minute)');
+                return;
+            }
+            
+            // Validate questions
+            for (const question of state.editingQuestions) {
+                if (!question.question.trim()) {
+                    alert('Please enter text for all questions');
+                    return;
+                }
+                
+                for (const option of question.options) {
+                    if (!option.trim()) {
+                        alert('Please fill in all options for all questions');
+                        return;
+                    }
+                }
+            }
+            
+            // Create or update quiz
+            const quizData = {
+                id: elements.quizTitle.value.trim().toLowerCase().replace(/\s+/g, '-'),
+                title: elements.quizTitle.value.trim(),
+                description: elements.quizDescription.value.trim(),
+                timeLimit: parseInt(elements.quizTime.value),
+                questions: state.editingQuestions
+            };
+            
+            if (state.editingQuizId !== null) {
+                // Update existing quiz
+                state.quizzes[state.editingQuizId] = quizData;
+            } else {
+                // Add new quiz
+                state.quizzes.push(quizData);
+            }
+            
+            // Hide editor
+            elements.quizEditor.classList.add('hidden');
+            
+            // Update UI
+            renderQuizList();
+            renderAdminQuizList();
+        }
+
+        // Cancel quiz editing
+        function cancelQuizEdit() {
+            elements.quizEditor.classList.add('hidden');
+        }
+
+        // Delete a quiz
+        function deleteQuiz(quizIndex) {
+            if (confirm('Are you sure you want to delete this quiz? This cannot be undone.')) {
+                state.quizzes.splice(quizIndex, 1);
+                renderAdminQuizList();
+                renderQuizList();
+            }
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
